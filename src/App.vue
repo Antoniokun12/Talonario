@@ -29,14 +29,13 @@
       </select>
       <h4>Cantidad de boletas</h4>
       <select v-model="selectedCantidad" class="selects">
-        <option value="25">25</option>
         <option value="50">50</option>
         <option value="75">75</option>
         <option value="100">100</option>
       </select>
       <h4>Fecha del sorteo</h4>
       <input type="date" v-model="fecha" class="controls" />
-      <button class="Registrar" @click="crearTalonario()">Crear</button>
+      <button class="custom-button2" @click="crearTalonario()">Crear</button>
     </section>
     <section class="register" v-if="RegistrarDueño">
       <h4>Registro de boleta</h4>
@@ -68,7 +67,15 @@
         <option value="No">No</option>
       </select>
 
-      <button class="Registrar" @click="registrar()">Registrar</button>
+      <button class="custom-button2" @click="registrar()">Registrar</button>
+      <button class="custom-button2" @click="atras3()">Regresar</button>
+    </section>
+    <section class="register" v-if="informacionDueño">
+      <h2>IINFORMACION</h2>
+      <h3>Nombre: {{ nombre }}</h3>
+      <h3>Teléfono: {{ telefono }}</h3>
+      <h3>Dirección: {{ direccion }}</h3>
+      <button @click="atras4()" class="custom-button2">Regresar</button>
     </section>
     <div class="container" v-if="cuerpo">
       <div class="con1">
@@ -124,10 +131,10 @@
           </div>
         </div>
       </div>
-      <div class="con3">
+      <div class="con3" v-if="ocultardiv">
         <h1>ACCIONES</h1>
         <div class="button-container">
-          <button class="custom-button2">ESTADO</button>
+          <button class="custom-button2" @click="estadoss()">ESTADO</button>
         </div>
         <div class="button-container">
           <button class="custom-button" @click="listarBoletas()">
@@ -151,6 +158,58 @@
             <div>GENERAR ARCHIVO DE DATOS</div>
           </button>
         </div>
+      </div>
+      <div v-if="mostrarFormulario" class="register">
+        <h2>Personalizar Colores</h2>
+
+        <label for="colorfondo">Fondo principal</label>
+        <input
+          type="color"
+          id="colorfondo"
+          v-model="colorfondo"
+          class="controls2"
+        /><br />
+
+        <label for="color-con1">Fondo de los contenedores</label>
+        <input
+          type="color"
+          id="color-con1"
+          v-model="colorCon1"
+          class="controls2"
+        /><br />
+
+        <label for="colortext">Color de los textos</label>
+        <input
+          type="color"
+          id="colortext"
+          v-model="colortext"
+          class="controls2"
+        /><br />
+
+        <label for="colorfondob">Fondo de los botones</label>
+        <input
+          type="color"
+          id="colorfondob"
+          v-model="colorfondob"
+          class="controls2"
+        /><br />
+
+        <button @click="aplicarColores" class="custom-button2">Aplicar</button>
+      </div>
+      <div class="register" v-if="mostrarestadoss">
+        <div class="estado">
+          <div class="estado-circulo disponible"></div>
+          <p>Disponible</p>
+        </div>
+        <div class="estado">
+          <div class="estado-circulo sin-pagar"></div>
+          <p>Sin pagar</p>
+        </div>
+        <div class="estado">
+          <div class="estado-circulo ganadora"></div>
+          <p>Ganadora</p>
+        </div>
+        <button @click="atras5()" class="custom-button2">Regresar</button>
       </div>
     </div>
     <div class="ticket-container" v-if="balotasCompradas">
@@ -229,8 +288,16 @@ const balotasCompradas = ref(false);
 const estado = ref(0);
 const cont_options_boletas = ref(false);
 const pagarBoleta = ref(false);
+const informacionDueño = ref(false);
 const estadoBoleta = ref("");
 const alerta = ref("");
+const colorfondo = ref("#8b8282");
+const colorCon1 = ref("#9db3c9");
+const colortext = ref("#ffffff");
+const colorfondob = ref("#b885ae");
+const mostrarFormulario = ref(false);
+const ocultardiv = ref(true);
+const mostrarestadoss = ref(false);
 
 const boleta = ref([]);
 const boletasCompradas = ref([]);
@@ -268,7 +335,7 @@ const crearTalonario = () => {
     fecha_Verificado.value = fecha.value;
     const cantidad = selectedCantidad.value;
 
-    for (let i = 0; i < cantidad; i++) {
+    for (let i = -1; i < cantidad; i++) {
       boleta.value.push({
         item: i + 1,
         estado: estado.value,
@@ -332,7 +399,26 @@ const registrar = () => {
   }
 };
 
-const DatosDueño = () => {};
+const DatosDueño = () => {
+  // Obtener el índice de la boleta seleccionada
+  const boletaSeleccionadaIndex = boletaSeleccionada.value;
+  // Obtener los datos de la boleta seleccionada
+  const boletaSeleccionadaData = boleta.value[boletaSeleccionadaIndex];
+
+  // Obtener los datos del dueño de la boleta desde el array de boletas compradas
+  const datosDueño = boletasCompradas.value.find(
+    (boleta) => boleta.numero === boletaSeleccionadaData.item
+  );
+
+  // Asignar los datos del dueño de la boleta a las variables reactivas
+  nombre.value = datosDueño.nombre;
+  telefono.value = datosDueño.telefono;
+  direccion.value = datosDueño.direccion;
+
+  // Cambiar el estado de la aplicación para mostrar la sección correspondiente
+  informacionDueño.value = true;
+  cont_options_boletas.value = false;
+};
 
 const PagarBoleta = () => {
   boleta.value[boletaSeleccionada.value].estado = 1;
@@ -361,6 +447,26 @@ const atras2 = () => {
   cuerpo.value = true;
 };
 
+const atras3 = () => {
+  nombre.value = "";
+  telefono.value = "";
+  direccion.value = "";
+  selectedBoleta.value = "";
+  estado.value = 0;
+  RegistrarDueño.value = false;
+  cuerpo.value = true;
+};
+
+const atras4 = () => {
+  informacionDueño.value = false;
+  cont_options_boletas.value = true;
+};
+
+const atras5 = () => {
+  mostrarestadoss.value = false;
+  ocultardiv.value = true;
+};
+
 const getBoletaColor = (estado) => {
   switch (estado) {
     case 0:
@@ -373,11 +479,11 @@ const getBoletaColor = (estado) => {
 };
 
 const editarTalonario = () => {
-  premio.value = "";
-  Precio.value = "";
-  selectedLoteria.value = "";
+  premio.value = premio_Verificado.value;
+  Precio.value = premio_Verificado.value;
+  selectedLoteria.value = selectedLoteria_Verificado.value;
   selectedCantidad.value = "";
-  fecha.value = "";
+  fecha.value = fecha_Verificado.value;
   RegistroTalonario.value = true;
   cuerpo.value = false;
   boleta.value = [];
@@ -388,7 +494,31 @@ const listarBoletas = () => {
   cuerpo.value = false;
 };
 
-const personalizarColores = () => {};
+const aplicarColores = () => {
+  document.documentElement.style.setProperty(
+    "--color-fondo-con1",
+    colorCon1.value
+  );
+  document.documentElement.style.setProperty("--color-fondo", colorfondo.value);
+  document.documentElement.style.setProperty("--color-text", colortext.value);
+  document.documentElement.style.setProperty(
+    "--color-fondo-botones",
+    colorfondob.value
+  );
+
+  mostrarFormulario.value = false; // Ocultar el formulario después de aplicar los colores
+  ocultardiv.value = true;
+};
+
+const personalizarColores = () => {
+  mostrarFormulario.value = true;
+  ocultardiv.value = false;
+};
+
+const estadoss = () => {
+  mostrarestadoss.value = true;
+  ocultardiv.value = false;
+};
 
 const imprimir = () => {
   const doc = new jsPDF();
@@ -413,21 +543,29 @@ const imprimir = () => {
   doc.save("vendidas.pdf");
 };
 </script>
+
 <style>
+:root {
+  --color-fondo: #8b8282;
+  --color-fondo-con1: #9db3c9;
+  --color-text: #ffffff;
+  --color-fondo-botones: #b885ae;
+}
+
 body {
-  background-color: #8b8282;
+  background-color: var(--color-fondo);
 }
 
 .register {
   width: 300px;
-  background: #6584a2;
+  background-color: var(--color-fondo-con1);
   padding: 30px;
   margin: auto;
   margin-top: 30px;
   margin-bottom: 30px;
   border-radius: 4px;
   font-family: "calibri";
-  color: white;
+  color: var(--color-text);
   box-shadow: 7px 13px 37px #000;
   text-align: center;
 }
@@ -441,6 +579,10 @@ body {
   font-family: "calibri";
   font-size: 18px;
   color: white;
+}
+
+.controls2 {
+  margin-left: 10px;
 }
 
 .selects {
@@ -479,13 +621,13 @@ h4 {
 .con1 {
   width: 250px;
   height: 70vh;
-  background: #9db3c9;
+  background-color: var(--color-fondo-con1);
   padding: 30px;
   margin: auto;
   margin-top: 80px;
   border-radius: 4px;
   font-family: "calibri";
-  color: white;
+  color: var(--color-text);
   box-shadow: 7px 13px 20px #000;
   text-align: center;
 }
@@ -499,14 +641,14 @@ h4 {
 .con2 {
   width: 600px;
   height: 75vh;
-  background: #9db3c9;
+  background-color: var(--color-fondo-con1);
   padding: 30px;
   margin: auto;
   margin-top: 30px;
   margin-bottom: 30px;
   border-radius: 4px;
   font-family: "calibri";
-  color: white;
+  color: var(--color-text);
   box-shadow: 7px 13px 20px #000;
   text-align: center;
   overflow: auto;
@@ -545,13 +687,13 @@ h4 {
 .con3 {
   width: 250px;
   height: 70vh;
-  background: #9db3c9;
+  background-color: var(--color-fondo-con1);
   padding: 30px;
   margin: auto;
   margin-top: 90px;
   border-radius: 4px;
   font-family: "calibri";
-  color: white;
+  color: var(--color-text);
   box-shadow: 7px 13px 20px #000;
 }
 
@@ -563,8 +705,8 @@ h4 {
 }
 
 .custom-button {
-  background-color: #b885ae;
-  color: white;
+  background-color: var(--color-fondo-botones);
+  color: var(--color-text);
   padding: 10px 20px;
   font-size: 16px;
   border: none;
@@ -578,8 +720,8 @@ h4 {
 }
 
 .custom-button2 {
-  background-color: #b885ae;
-  color: white;
+  background-color: var(--color-fondo-botones);
+  color: var(--color-text);
   padding: 10px 20px;
   font-size: 16px;
   border: none;
@@ -607,7 +749,6 @@ h4 {
 
 /* table  */
 
-
 .ticket-container {
   margin: 20px;
 }
@@ -618,7 +759,8 @@ h4 {
   margin-bottom: 20px;
 }
 
-.ticket-table th, .ticket-table td {
+.ticket-table th,
+.ticket-table td {
   border: 1px solid #2a2929;
   padding: 8px;
   text-align: left;
@@ -634,15 +776,40 @@ h4 {
 
 .back-button {
   padding: 10px 15px;
-  background-color: #4caf50;
-  color: #fff;
+  background-color: var(--color-fondo-botones);
+  color: var(--color-text);
   border: none;
   border-radius: 4px;
   cursor: pointer;
 }
 
 .back-button:hover {
-  background-color: #45a049;
+  background-color: #959d96;
 }
 
+.estado {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 10px;
+}
+
+.estado-circulo {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  margin-bottom: 10px;
+}
+
+.disponible {
+  background-color: #aaffaa;
+}
+
+.sin-pagar {
+  background-color: #ffaaaa;
+}
+
+.ganadora {
+  background-color: yellow;
+}
 </style>
