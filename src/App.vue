@@ -7,6 +7,7 @@
         </div>
       </div>
       <h1>Talonario</h1>
+      
       <h4>Premio</h4>
       <input
         type="text"
