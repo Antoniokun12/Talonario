@@ -1,13 +1,8 @@
 <template>
   <div class="talonario">
     <section class="register" v-if="RegistroTalonario">
-      <div :class="Alerta()">
-        <div class="cont_alerta">
-          <p class="text_alerta">{{ alerta }}</p>
-        </div>
-      </div>
+      <h1 class="alert">{{alerta}}</h1>
       <h1>Talonario</h1>
-      
       <h4>Premio</h4>
       <input
         type="text"
@@ -17,7 +12,7 @@
       />
       <h4>Valor boleta</h4>
       <input
-        type="text"
+        type="number"
         placeholder="Valor boleta"
         v-model="Precio"
         class="controls"
@@ -32,14 +27,23 @@
       <select v-model="selectedCantidad" class="selects">
         <option value="50">50</option>
         <option value="75">75</option>
-        <option value="100">100</option>
+        <option value="99">100</option>
       </select>
       <h4>Fecha del sorteo</h4>
-      <input type="date" v-model="fecha" class="controls" />
-      <button class="custom-button2" @click="crearTalonario()">Crear</button>
+      <input type="datetime-local" v-model="fecha" class="controls" />
+      <button class="custom-button2" @click="crearTalonario()" v-if="editacion">
+        Editar
+      </button>
+      <button @click="atras6()" class="custom-button2" v-if="editacion">
+        Regresar
+      </button>
+      <button class="custom-button2" @click="crearTalonario()" v-else>
+        Crear
+      </button>
     </section>
     <section class="register" v-if="RegistrarDueño">
-      <h4>Registro de boleta</h4>
+      <h1 class="alert">{{alerta}}</h1>
+      <h3>Registro de boleta</h3>
 
       <input
         type="text"
@@ -62,7 +66,7 @@
         class="controls"
       />
 
-      <h4>Pagar boleta</h4>
+      <h3>Pagar boleta</h3>
       <select v-model="selectedBoleta" class="selects">
         <option value="Si">Si</option>
         <option value="No">No</option>
@@ -87,7 +91,7 @@
               <img src="/taza.png" alt="imagen" class="imgs" />
             </div>
             <div class="text-container">
-              <div class="texto">{{ premio_Verificado }}</div>
+              <div class="texto">{{ formatpremio }}</div>
             </div>
           </div>
           <div class="margib">
@@ -95,7 +99,7 @@
               <img src="/signo-de-dolar.png" alt="imagen" class="imgs" />
             </div>
             <div class="text-container">
-              <div class="texto">{{ Precio_Verificado }}</div>
+              <div class="texto">{{ formatprecio }}</div>
             </div>
           </div>
           <div class="margib">
@@ -124,8 +128,9 @@
           v-for="(boleta, i) in boleta"
           :key="i"
           :class="getBoletaColor(boleta.estado)"
+          @click="comprarBoleta(i), marcarganador()"
         >
-          <div class="cont_balota" @click="comprarBoleta(i)">
+          <div class="cont_balota">
             <div>
               <p>{{ boleta.item }}</p>
             </div>
@@ -203,6 +208,10 @@
           <p>Disponible</p>
         </div>
         <div class="estado">
+          <div class="estado-circulo comprada"></div>
+          <p>Comprada</p>
+        </div>
+        <div class="estado">
           <div class="estado-circulo sin-pagar"></div>
           <p>Sin pagar</p>
         </div>
@@ -255,13 +264,17 @@
         Liberar balota
       </button>
 
+      <button @click="Balotaganadora()" class="custom-button2ganador" v-if="mostrarBotonDespuesDeSorteo">
+        Marcar Ganador
+      </button>
+
       <button @click="atras2()" class="custom-button2">Regresar</button>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref } from "vue";
+import { ref, watchEffect } from "vue";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
@@ -299,6 +312,11 @@ const colorfondob = ref("#b885ae");
 const mostrarFormulario = ref(false);
 const ocultardiv = ref(true);
 const mostrarestadoss = ref(false);
+const formatprecio = ref("");
+const formatpremio = ref("");
+const editacion = ref(false);
+const fechaIngresada = ref("");
+const mostrarBotonDespuesDeSorteo = ref(false);
 
 const boleta = ref([]);
 const boletasCompradas = ref([]);
@@ -306,7 +324,6 @@ const boletasCompradas = ref([]);
 const ocultarAlerta = () => {
   setTimeout(() => {
     alerta.value = "";
-    Alerta();
   }, 2500);
 };
 
@@ -319,6 +336,9 @@ const Alerta = () => {
 };
 
 const crearTalonario = () => {
+  // Obtener la fecha actual
+  const fechaActual = new Date();
+  
   if (
     premio.value === "" ||
     Precio.value === "" ||
@@ -329,11 +349,16 @@ const crearTalonario = () => {
     alerta.value = "Todos los campos son obligatorios";
     ocultarAlerta();
     return;
+  } else if (new Date(fecha.value) < fechaActual) { // Verificar si la fecha ingresada es igual o anterior a la fecha actual
+    alerta.value = "La fecha ingresada no debe ser en pasado";
+    ocultarAlerta();
+    return;
   } else {
     premio_Verificado.value = premio.value;
     Precio_Verificado.value = Precio.value;
     selectedLoteria_Verificado.value = selectedLoteria.value;
     fecha_Verificado.value = fecha.value;
+    fechaIngresada.value = fecha.value;
     const cantidad = selectedCantidad.value;
 
     for (let i = -1; i < cantidad; i++) {
@@ -347,6 +372,17 @@ const crearTalonario = () => {
   }
 };
 
+watchEffect(() => {
+  formatprecio.value = Precio_Verificado.value.toLocaleString("es-CO", {
+    style: "currency",
+    currency: "COP",
+  });
+  formatpremio.value = premio.value.toLocaleString("es-CO", {
+    style: "currency",
+    currency: "COP",
+  });
+});
+
 const comprarBoleta = (index) => {
   boletaSeleccionada.value = index;
   if (boleta.value[index].estado === 0) {
@@ -359,6 +395,10 @@ const comprarBoleta = (index) => {
   } else if (boleta.value[index].estado === 2) {
     cont_options_boletas.value = true;
     pagarBoleta.value = true;
+    cuerpo.value = false;
+  } else if (boleta.value[index].estado === 3) {
+    cont_options_boletas.value = true;
+    pagarBoleta.value = false;
     cuerpo.value = false;
   }
 };
@@ -438,6 +478,12 @@ const liberarBalota = () => {
   });
 };
 
+const Balotaganadora = () => {
+  boleta.value[boletaSeleccionada.value].estado = 3;
+  cont_options_boletas.value = false;
+  cuerpo.value = true;
+};
+
 const atras = () => {
   balotasCompradas.value = false;
   cuerpo.value = true;
@@ -468,6 +514,20 @@ const atras5 = () => {
   ocultardiv.value = true;
 };
 
+const atras6 = () => {
+  RegistroTalonario.value = false;
+  cuerpo.value = true;
+};
+
+const marcarganador = () => {
+  const ahora = new Date();
+  if (ahora > new Date(fecha.value)) {
+    mostrarBotonDespuesDeSorteo.value = true;
+  } else {
+    mostrarBotonDespuesDeSorteo.value = false;
+  }
+};
+
 const getBoletaColor = (estado) => {
   switch (estado) {
     case 0:
@@ -476,18 +536,21 @@ const getBoletaColor = (estado) => {
       return "boletaPagada";
     case 2:
       return "boletaNoPagada";
+    case 3:
+      return "boletaGanadora";
   }
 };
 
 const editarTalonario = () => {
+  editacion.value = true;
   premio.value = premio_Verificado.value;
-  Precio.value = premio_Verificado.value;
+  Precio.value = Precio_Verificado.value;
   selectedLoteria.value = selectedLoteria_Verificado.value;
   selectedCantidad.value = "";
   fecha.value = fecha_Verificado.value;
   RegistroTalonario.value = true;
   cuerpo.value = false;
-  boleta.value = [];
+  // boleta.value = [];
 };
 
 const listarBoletas = () => {
@@ -540,6 +603,38 @@ const imprimir = () => {
     body: tableData,
     startY: 20,
   });
+
+  // Obtener el precio global
+  const precio = parseFloat(Precio.value);
+
+  // Calcular el dinero recaudado por boletas con estado 1
+  const dineroRecaudadoEstado1 = boletasCompradas.value.reduce((total, boleta) => {
+    if (boleta.pago === "Pagada") { // Si la boleta está pagada
+      return total + precio;
+    } else {
+      return total;
+    }
+  }, 0);
+
+  // Calcular el dinero recaudado por boletas con estado 2
+  const dineroRecaudadoEstado2 = boletasCompradas.value.reduce((total, boleta) => {
+    if (boleta.pago === "No pagada") { // Si la boleta no está pagada
+      return total + precio;
+    } else {
+      return total;
+    }
+  }, 0);
+
+  // Calcular el total
+  const total = (dineroRecaudadoEstado1 + dineroRecaudadoEstado2).toLocaleString("es-CO", {
+    style: "currency",
+    currency: "COP",
+  }); // Formatear el total
+
+  // Agregar los campos al documento
+  doc.text(`Dinero recaudado: ${dineroRecaudadoEstado1.toLocaleString("es-CO", { style: "currency", currency: "COP" })}`, 10, doc.autoTable.previous.finalY + 10);
+  doc.text(`Dinero que falta por cobrar: ${dineroRecaudadoEstado2.toLocaleString("es-CO", { style: "currency", currency: "COP" })}`, 10, doc.autoTable.previous.finalY + 20);
+  doc.text(`Total: ${total}`, 10, doc.autoTable.previous.finalY + 30);
 
   doc.save("vendidas.pdf");
 };
@@ -605,6 +700,11 @@ body {
   height: 20%;
 }
 
+h3 {
+  margin-bottom: 3%;
+  margin-top: 3%;
+}
+
 h4 {
   margin-bottom: 3%;
   margin-top: 3%;
@@ -645,8 +745,8 @@ h4 {
   background-color: var(--color-fondo-con1);
   padding: 30px;
   margin: auto;
-  margin-top: 30px;
-  margin-bottom: 30px;
+  margin-top: 75px;
+  margin-bottom: auto;
   border-radius: 4px;
   font-family: "calibri";
   color: var(--color-text);
@@ -663,7 +763,7 @@ h4 {
   width: 47px;
   height: 47px;
   border-radius: 47px;
-  text-align: center;
+  align-content: center;
   color: black;
 }
 
@@ -672,7 +772,7 @@ h4 {
   width: 47px;
   height: 47px;
   border-radius: 47px;
-  text-align: center;
+  align-content: center;
   color: black;
 }
 
@@ -681,7 +781,16 @@ h4 {
   width: 47px;
   height: 47px;
   border-radius: 47px;
-  text-align: center;
+  align-content: center;
+  color: black;
+}
+
+.boletaGanadora {
+  background-color: yellow;
+  width: 47px;
+  height: 47px;
+  border-radius: 47px;
+  align-content: center;
   color: black;
 }
 
@@ -691,7 +800,7 @@ h4 {
   background-color: var(--color-fondo-con1);
   padding: 30px;
   margin: auto;
-  margin-top: 90px;
+  margin-top: 80px;
   border-radius: 4px;
   font-family: "calibri";
   color: var(--color-text);
@@ -723,6 +832,20 @@ h4 {
 .custom-button2 {
   background-color: var(--color-fondo-botones);
   color: var(--color-text);
+  padding: 10px 20px;
+  font-size: 16px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  margin-top: 10px;
+  transition: background-color 0.3s;
+  width: 100%;
+  align-items: center;
+}
+
+.custom-button2ganador {
+  background-color: rgb(239, 239, 81);
+  color: black;
   padding: 10px 20px;
   font-size: 16px;
   border: none;
@@ -803,6 +926,10 @@ h4 {
 }
 
 .disponible {
+  background-color: white;
+}
+
+.comprada {
   background-color: #aaffaa;
 }
 
@@ -812,5 +939,9 @@ h4 {
 
 .ganadora {
   background-color: yellow;
+}
+
+.alert{
+  color: red;
 }
 </style>
