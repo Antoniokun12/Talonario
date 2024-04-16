@@ -5,7 +5,7 @@
       <h1>Talonario</h1>
       <h4>Premio</h4>
       <input
-        type="text"
+        type="number"
         placeholder="Premio"
         v-model="premio"
         class="controls"
@@ -75,11 +75,40 @@
       <button class="custom-button2" @click="registrar()">Registrar</button>
       <button class="custom-button2" @click="atras3()">Regresar</button>
     </section>
+    <section class="register" v-if="editarinformacionbalota">
+      <h1 class="alert">{{alerta}}</h1>
+      <h3>Registro de boleta</h3>
+
+      <input
+        type="text"
+        placeholder="Nombre"
+        v-model="nombre"
+        class="controls"
+      />
+
+      <input
+        type="text"
+        placeholder="Telefono"
+        v-model="telefono"
+        class="controls"
+      />
+
+      <input
+        type="text"
+        placeholder="Direccion"
+        v-model="direccion"
+        class="controls"
+      />
+
+      <button class="custom-button2" @click="registroedit()">Editar</button>
+      <button class="custom-button2" @click="atras3()">Regresar</button>
+    </section>
     <section class="register" v-if="informacionDueño">
       <h2>IINFORMACION</h2>
       <h3>Nombre: {{ nombre }}</h3>
       <h3>Teléfono: {{ telefono }}</h3>
       <h3>Dirección: {{ direccion }}</h3>
+      <button @click="editarInformacion()" class="custom-button2">Editar</button>
       <button @click="atras4()" class="custom-button2">Regresar</button>
     </section>
     <div class="container" v-if="cuerpo">
@@ -317,6 +346,7 @@ const formatpremio = ref("");
 const editacion = ref(false);
 const fechaIngresada = ref("");
 const mostrarBotonDespuesDeSorteo = ref(false);
+const editarinformacionbalota = ref(false);
 
 const boleta = ref([]);
 const boletasCompradas = ref([]);
@@ -377,7 +407,7 @@ watchEffect(() => {
     style: "currency",
     currency: "COP",
   });
-  formatpremio.value = premio.value.toLocaleString("es-CO", {
+  formatpremio.value = premio_Verificado.value.toLocaleString("es-CO", {
     style: "currency",
     currency: "COP",
   });
@@ -436,6 +466,7 @@ const registrar = () => {
     selectedBoleta.value = "";
     estado.value = 0;
     RegistrarDueño.value = false;
+    editarinformacionbalota.value = false;
     cuerpo.value = true;
   }
 };
@@ -455,11 +486,71 @@ const DatosDueño = () => {
   nombre.value = datosDueño.nombre;
   telefono.value = datosDueño.telefono;
   direccion.value = datosDueño.direccion;
+  console.log(boletasCompradas);
 
   // Cambiar el estado de la aplicación para mostrar la sección correspondiente
   informacionDueño.value = true;
   cont_options_boletas.value = false;
 };
+
+const editarInformacion = () => {
+  editarinformacionbalota.value = true;
+  informacionDueño.value = false; 
+
+   const boletaSeleccionadaIndex = boletaSeleccionada.value;
+  // Obtener los datos de la boleta seleccionada
+  const boletaSeleccionadaData = boleta.value[boletaSeleccionadaIndex];
+
+  // Obtener los datos del dueño de la boleta desde el array de boletas compradas
+  const datosDueño = boletasCompradas.value.find(
+    (boleta) => boleta.numero === boletaSeleccionadaData.item
+  );
+
+  // Asignar los datos del dueño de la boleta a las variables reactivas
+  nombre.value = datosDueño.nombre;
+  telefono.value = datosDueño.telefono;
+  direccion.value = datosDueño.direccion;
+  selectedBoleta.value = datosDueño.selectedBoleta;
+  console.log(boletasCompradas);
+
+};
+
+const registroedit = () => {
+  // Validar que los campos no estén vacíos
+  if (nombre.value === "" || telefono.value === "" || direccion.value === "") {
+    alerta.value = "Todos los campos son obligatorios";
+    ocultarAlerta();
+    return; // Detener la ejecución si hay campos vacíos
+  }
+
+  // Obtener el índice de la boleta seleccionada
+  const boletaSeleccionadaIndex = boletaSeleccionada.value;
+  // Obtener los datos de la boleta seleccionada
+  const boletaSeleccionadaData = boleta.value[boletaSeleccionadaIndex];
+
+  // Iterar sobre el arreglo de boletas compradas para encontrar el objeto a editar
+  for (let i = 0; i < boletasCompradas.value.length; i++) {
+    if (boletasCompradas.value[i].numero === boletaSeleccionadaData.item) {
+      // Actualizar los datos del dueño de la boleta
+      boletasCompradas.value[i].nombre = nombre.value;
+      boletasCompradas.value[i].telefono = telefono.value;
+      boletasCompradas.value[i].direccion = direccion.value;
+
+      // Limpiar los campos después de editar la información
+      nombre.value = "";
+      telefono.value = "";
+      direccion.value = "";
+      // Salir del bucle una vez que se haya encontrado y actualizado el objeto
+      break;
+    }
+  }
+
+  // Ocultar el formulario de edición y volver a la sección principal
+  editarinformacionbalota.value = false;
+  cuerpo.value = true;
+};
+
+
 
 const PagarBoleta = () => {
   boleta.value[boletaSeleccionada.value].estado = 1;
@@ -502,6 +593,7 @@ const atras3 = () => {
   estado.value = 0;
   RegistrarDueño.value = false;
   cuerpo.value = true;
+  editarinformacionbalota.value = false;
 };
 
 const atras4 = () => {
@@ -638,6 +730,7 @@ const imprimir = () => {
 
   doc.save("vendidas.pdf");
 };
+
 </script>
 
 <style>
