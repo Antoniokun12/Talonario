@@ -144,7 +144,7 @@
               <img src="/calendario.png" alt="imagen" class="imgs" />
             </div>
             <div class="text-container">
-              <div class="texto">{{ fecha_Verificado }}</div>
+              <div class="texto">{{ fechat }}</div>
             </div>
           </div>
           <button class="custom-button2" @click="editarTalonario()">
@@ -303,7 +303,7 @@
 </template>
 
 <script setup>
-import { ref, watchEffect } from "vue";
+import { ref, watchEffect, computed } from "vue";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
@@ -365,6 +365,10 @@ const Alerta = () => {
   }
 };
 
+const fechat = computed(() => {
+  return fecha.value.replace("T", " ");
+});
+
 const crearTalonario = () => {
   // Obtener la fecha actual
   const fechaActual = new Date();
@@ -379,7 +383,7 @@ const crearTalonario = () => {
     alerta.value = "Todos los campos son obligatorios";
     ocultarAlerta();
     return;
-  } else if (new Date(fecha.value) < fechaActual) { // Verificar si la fecha ingresada es igual o anterior a la fecha actual
+  } else if (new Date(fecha.value) < fechaActual) { 
     alerta.value = "La fecha ingresada no debe ser en pasado";
     ocultarAlerta();
     return;
@@ -472,23 +476,23 @@ const registrar = () => {
 };
 
 const DatosDueño = () => {
-  // Obtener el índice de la boleta seleccionada
+  
   const boletaSeleccionadaIndex = boletaSeleccionada.value;
-  // Obtener los datos de la boleta seleccionada
+  
   const boletaSeleccionadaData = boleta.value[boletaSeleccionadaIndex];
 
-  // Obtener los datos del dueño de la boleta desde el array de boletas compradas
+  
   const datosDueño = boletasCompradas.value.find(
     (boleta) => boleta.numero === boletaSeleccionadaData.item
   );
 
-  // Asignar los datos del dueño de la boleta a las variables reactivas
+  
   nombre.value = datosDueño.nombre;
   telefono.value = datosDueño.telefono;
   direccion.value = datosDueño.direccion;
   console.log(boletasCompradas);
 
-  // Cambiar el estado de la aplicación para mostrar la sección correspondiente
+  
   informacionDueño.value = true;
   cont_options_boletas.value = false;
 };
@@ -498,15 +502,15 @@ const editarInformacion = () => {
   informacionDueño.value = false; 
 
    const boletaSeleccionadaIndex = boletaSeleccionada.value;
-  // Obtener los datos de la boleta seleccionada
+  
   const boletaSeleccionadaData = boleta.value[boletaSeleccionadaIndex];
 
-  // Obtener los datos del dueño de la boleta desde el array de boletas compradas
+  
   const datosDueño = boletasCompradas.value.find(
     (boleta) => boleta.numero === boletaSeleccionadaData.item
   );
 
-  // Asignar los datos del dueño de la boleta a las variables reactivas
+  
   nombre.value = datosDueño.nombre;
   telefono.value = datosDueño.telefono;
   direccion.value = datosDueño.direccion;
@@ -516,36 +520,36 @@ const editarInformacion = () => {
 };
 
 const registroedit = () => {
-  // Validar que los campos no estén vacíos
+  
   if (nombre.value === "" || telefono.value === "" || direccion.value === "") {
     alerta.value = "Todos los campos son obligatorios";
     ocultarAlerta();
-    return; // Detener la ejecución si hay campos vacíos
+    return; 
   }
 
-  // Obtener el índice de la boleta seleccionada
+  
   const boletaSeleccionadaIndex = boletaSeleccionada.value;
-  // Obtener los datos de la boleta seleccionada
+  
   const boletaSeleccionadaData = boleta.value[boletaSeleccionadaIndex];
 
-  // Iterar sobre el arreglo de boletas compradas para encontrar el objeto a editar
+  
   for (let i = 0; i < boletasCompradas.value.length; i++) {
     if (boletasCompradas.value[i].numero === boletaSeleccionadaData.item) {
-      // Actualizar los datos del dueño de la boleta
+      
       boletasCompradas.value[i].nombre = nombre.value;
       boletasCompradas.value[i].telefono = telefono.value;
       boletasCompradas.value[i].direccion = direccion.value;
 
-      // Limpiar los campos después de editar la información
+      
       nombre.value = "";
       telefono.value = "";
       direccion.value = "";
-      // Salir del bucle una vez que se haya encontrado y actualizado el objeto
+      
       break;
     }
   }
 
-  // Ocultar el formulario de edición y volver a la sección principal
+  
   editarinformacionbalota.value = false;
   cuerpo.value = true;
 };
@@ -696,34 +700,34 @@ const imprimir = () => {
     startY: 20,
   });
 
-  // Obtener el precio global
+  
   const precio = parseFloat(Precio.value);
 
-  // Calcular el dinero recaudado por boletas con estado 1
+  
   const dineroRecaudadoEstado1 = boletasCompradas.value.reduce((total, boleta) => {
-    if (boleta.pago === "Pagada") { // Si la boleta está pagada
+    if (boleta.pago === "Pagada") { 
       return total + precio;
     } else {
       return total;
     }
   }, 0);
 
-  // Calcular el dinero recaudado por boletas con estado 2
+  
   const dineroRecaudadoEstado2 = boletasCompradas.value.reduce((total, boleta) => {
-    if (boleta.pago === "No pagada") { // Si la boleta no está pagada
+    if (boleta.pago === "No pagada") { 
       return total + precio;
     } else {
       return total;
     }
   }, 0);
 
-  // Calcular el total
+  
   const total = (dineroRecaudadoEstado1 + dineroRecaudadoEstado2).toLocaleString("es-CO", {
     style: "currency",
     currency: "COP",
-  }); // Formatear el total
+  }); 
 
-  // Agregar los campos al documento
+  
   doc.text(`Dinero recaudado: ${dineroRecaudadoEstado1.toLocaleString("es-CO", { style: "currency", currency: "COP" })}`, 10, doc.autoTable.previous.finalY + 10);
   doc.text(`Dinero que falta por cobrar: ${dineroRecaudadoEstado2.toLocaleString("es-CO", { style: "currency", currency: "COP" })}`, 10, doc.autoTable.previous.finalY + 20);
   doc.text(`Total: ${total}`, 10, doc.autoTable.previous.finalY + 30);
